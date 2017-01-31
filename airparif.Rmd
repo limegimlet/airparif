@@ -1,0 +1,265 @@
+---
+title: "airparif"
+author: "Sarah Hosking"
+date: "December 10, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(GGally)
+```
+
+## R Markdown
+
+
+```{r air pollution in paris Dec 2016}
+airparif <- read.csv("airparif_centre_8_12_2016.csv", sep = ";", stringsAsFactors = FALSE)
+#airparif <- read.csv("airparif_centre_8_12_2016.csv", sep = ";")
+
+dim(airparif)
+str(airparif)
+summary(airparif)
+head(airparif,20)
+tail(airparif,20)
+
+```
+
+## Prepare the data
+
+Let's convert the date var into a true Date type variable
+
+```{r convert str date into date}
+
+airparif$date <- as.Date(airparif$date, format = "%d/%m/%Y") 
+str(airparif)
+
+```
+
+Then we can use tidyR's `separate` function to split these into day, month and year variables.
+
+```{r split date into y m d vars}
+
+# remove 1st row
+airparif <- airparif[-1,]
+
+# make a copy
+airparif$date2 <- airparif$date
+
+airparif <- separate(airparif, date2, c("year", "month", "day"), sep="-")
+str(airparif)
+
+#fix malformed date for row 212
+#airparif$date[212] <- "2011-07-20"
+
+#try again
+#airparif <- separate(airparif, date, c("year", "month", "day"), sep="-")
+
+```
+
+Time to look at the distributions
+
+First let's understand what these pollutants are
+
+```{r}
+
+# get column names
+names(airparif)
+
+
+```
+
+
+What the abbreviations mean:
+
+* `PM25` = fine particulate > 2.5 mm
+* `PM10` = fine particulate > 10 mm
+* `03` = Ozone
+* `NO2` = Nitrogen Dioxide (Azote)
+* `CO` = Carbon monoxide
+
+Ok, so let's look at the data!
+
+```{r plot histograms}
+
+qplot(data = airparif, PM10)
+
+```
+
+Ugh. What's wrong here?
+
+```{r}
+
+str(airparif)
+
+```
+
+```{r convert columns to numeric}
+
+# create list of cols to convert
+cols<- names(airparif)
+cols.num <- cols[3:length(airparif)]
+
+# convert pollutants to numeric
+airparif[cols.num] <- lapply(airparif[cols.num], as.numeric)
+
+
+# this converts everything to a list
+# need to reconvert to df
+airparif <- data.frame(airparif)
+str(airparif)
+summary(airparif)
+
+
+# plot again
+qplot(data = airparif, PM10)
+
+# increase # of bins
+qplot(data = airparif, PM10, binwidth = 5)
+
+
+```
+
+Now let's try faceting
+
+```{r facets}
+# by year
+qplot(data = airparif, PM10, binwidth = 5, facets = ~year)
+
+# remove the NA values
+qplot(data = na.omit(airparif), PM10, binwidth = 5, facets = ~year)
+
+# what were the max values for each year?
+tapply(airparif$PM10, airparif$year, summary)
+
+ggplot(aes(PM10), data = na.omit(airparif)) +
+  geom_histogram(binwidth = 5) +
+  facet_wrap(~year, ncol = 1)
+
+```
+
+
+Looking at the other variables
+
+```{r}
+
+qplot(data = na.omit(airparif), PM25, binwidth = 5, facets = ~heure)
+qplot(data = airparif, NO2, binwidth = 7, facets = ~heure)
+qplot(data = airparif, O3, binwidth = 3, facets = ~year)
+qplot(data = na.omit(airparif), CO, facets = ~year)
+
+
+```
+
+```{r boxplots}
+
+ggplot(aes(x = as.factor(year), y = PM10), data = na.omit(airparif)) +
+  geom_boxplot(na.rm = TRUE)
+
+ggplot(aes(x = as.factor(year), y = PM25), data = airparif) +
+  geom_boxplot()
+
+ggplot(aes(x = as.factor(year), y = NO2), data = airparif) +
+  geom_boxplot()
+
+ggplot(aes(x = as.factor(year), y = O3), data = airparif) +
+  geom_boxplot()
+
+```
+
+## Comparing variables
+
+```{r}
+
+# create a sample
+set.seed(888)
+sample <- subset(airparif, select = c(PM10, PM25, NO2, O3, CO))
+sample <- sample[sample(1:nrow(sample),2500),]
+
+# look at correlations
+ggpairs(sample, axisLabels = 'internal',
+        lower = list(continuous = wrap("smooth", alpha=0.2, shape = I('.'))), 
+        upper = list(combo = wrap("box", outlier.shape = I('.'))))
+```
+
+## Create summaries
+
+```{r}
+#summary <- airparif %>% group_by(day, month, year) %>% 
+summary <- airparif %>% 
+  group_by(date) %>% 
+  summarise(PM10mean = mean(PM10),
+            PM25mean = mean(PM25),
+            NO2mean = mean(NO2),
+            O3mean = mean(O3),
+            COmean = mean(CO)) %>% 
+  ungroup() %>% 
+  group_by(year(date)) %>% 
+  
+summary2 <- airparif %>% 
+  group_by(date) %>% 
+  summarise_each(funs(mean), PM10, PM25, NO2, O3, CO) %>% 
+  ungroup() 
+  
+PM10.summary$level <- cut(PM10.summary$PM10mean, breaks = c(0, 25, 50, 75, 100, 999), 
+                          labels = c("very low", "low", "medium", "high", "very high"))
+
+
+#mutate(yr.month = year * 100 + month) %>% 
+  #group_by(yr.month) %>% 
+  #arrange(yr.month)'''
+  
+
+head(summary)
+tail(summary)
+
+# plot trend
+
+ggplot(aes(date, PM10mean), data = na.omit(summary)) +
+  geom_line()
+
+
+```
+
+Need to add some more context to this plot. What are the levels for medium, high, and very high pollution?
+
+```{r adding h lines}
+
+ggplot(aes(date, PM10mean), data = summary) +
+  geom_line() +
+  geom_hline(yintercept = 25, col = "green") +
+  geom_hline(yintercept = 50, col = "yellow") +
+  geom_hline(yintercept = 75, col = "orange") +
+  geom_hline(yintercept = 100, col = "red")
+```
+
+So how many days have their been for each level?
+
+```{r gather & spread}
+
+# add a levels column to summary
+
+#x <- list(1:3, 4:6)
+#do.call(cbind, lapply(x, function(i) rowMeans(dat[, i])))
+
+
+PM10.summary$level <- cut(PM10.summary$PM10mean, breaks = c(0, 25, 50, 75, 100, 999), 
+                          labels = c("very low", "low", "medium", "high", "very high"))
+
+```
+
+
+
+This really noisy. I'd rather plot just the months.
+
+For this I'll need to create a new date variable - year-month.
+
+```{r year-month}
+
+yr.mon <- year(airparif$date) * 100 + month(airparif$date)
+head(yr.mon)
+
+```
+

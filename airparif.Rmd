@@ -3,6 +3,7 @@ title: "airparif"
 author: "Sarah Hosking"
 date: "December 10, 2016"
 output: html_document
+
 ---
 
 ```{r setup, include=FALSE}
@@ -10,6 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(tidyverse)
 library(GGally)
+library(lubridate)
+
+theme_set(theme_bw())
+
 ```
 
 ## R Markdown
@@ -169,9 +174,23 @@ ggplot(aes(x = as.factor(year), y = O3), data = airparif) +
 
 ```
 
-## Comparing variables
+## Scatterplots
+
+How has pollution evolved over time?
 
 ```{r}
+
+ggplot(data = airparif, aes(x = date, y = PM25)) +
+  geom_point(alpha = 0.2)
+
+```
+
+
+
+
+## Comparing variables
+
+```{r, eval=FALSE, include=FALSE}
 
 # create a sample
 set.seed(888)
@@ -187,25 +206,11 @@ ggpairs(sample, axisLabels = 'internal',
 ## Create summaries
 
 ```{r}
-#summary <- airparif %>% group_by(day, month, year) %>% 
-summary <- airparif %>% 
-  group_by(date) %>% 
-  summarise(PM10mean = mean(PM10),
-            PM25mean = mean(PM25),
-            NO2mean = mean(NO2),
-            O3mean = mean(O3),
-            COmean = mean(CO)) %>% 
-  ungroup() %>% 
-  group_by(year(date)) %>% 
   
-summary2 <- airparif %>% 
+summary <- airparif %>% 
   group_by(date) %>% 
   summarise_each(funs(mean), PM10, PM25, NO2, O3, CO) %>% 
   ungroup() 
-  
-PM10.summary$level <- cut(PM10.summary$PM10mean, breaks = c(0, 25, 50, 75, 100, 999), 
-                          labels = c("very low", "low", "medium", "high", "very high"))
-
 
 #mutate(yr.month = year * 100 + month) %>% 
   #group_by(yr.month) %>% 
@@ -215,19 +220,24 @@ PM10.summary$level <- cut(PM10.summary$PM10mean, breaks = c(0, 25, 50, 75, 100, 
 head(summary)
 tail(summary)
 
+```
+
+```{r}
+
 # plot trend
 
-ggplot(aes(date, PM10mean), data = na.omit(summary)) +
+ggplot(aes(date, PM10), data = na.omit(summary)) +
   geom_line()
-
+  
 
 ```
+
 
 Need to add some more context to this plot. What are the levels for medium, high, and very high pollution?
 
 ```{r adding h lines}
 
-ggplot(aes(date, PM10mean), data = summary) +
+ggplot(aes(date, PM10), data = summary) +
   geom_line() +
   geom_hline(yintercept = 25, col = "green") +
   geom_hline(yintercept = 50, col = "yellow") +
@@ -244,22 +254,91 @@ So how many days have their been for each level?
 #x <- list(1:3, 4:6)
 #do.call(cbind, lapply(x, function(i) rowMeans(dat[, i])))
 
+x = summary[2:6]
+x
 
-PM10.summary$level <- cut(PM10.summary$PM10mean, breaks = c(0, 25, 50, 75, 100, 999), 
-                          labels = c("very low", "low", "medium", "high", "very high"))
+# create function to set pollution levels
+
+
+
+pollution.level <- function(x, lower = 0, upper = 100, 
+                            by = 25, sep = "-", above.char = "+") {
+ labs <- c("very low", "low", "medium", "high", "very high")
+
+ cut(floor(x), 
+     breaks = c(seq(lower, upper, by = by), Inf),
+     right = FALSE, 
+     labels = labs)
+}
+
+# apply to all the columns of x
+x[1:5] <- lapply(x[1:5], pollution.level)
+
+
+
+
 
 ```
 
+```{r}
+
+levels <- cbind(summary[1], x)
+
+# gather(cases, "year", "n", 2:4)
+levels.long <- gather(levels, "pollutant", "level", 2:6)
+
+#spread(pollution, size, amount)
+
+# reshaping to long format
+count.levels.l <- levels %>% 
+  # collapse pollutant columns into one
+  # create new 'level' column
+  gather(pollutant, level, 2:6) %>% 
+  group_by(year(date), pollutant, level) %>% 
+  # count number of days at each level
+  summarise(n = n())
+
+str(count.levels.l)
+
+# need to conver 'level' col to ordered factor
+count.levels.l$level <- ordered(count.levels.l$level, 
+                                levels = c("very low", "low", "medium", 
+                                           "high", "very high", "NA"))
+
+# now reshape to wide format, count days, 
+# fill missing vals with zeros
+count.levels.w <- count.levels.l %>%
+  spread(level, n, fill=0)
+
+# and let's gather once more
+test <- count.levels.w %>% 
+  ungroup() %>% 
+  group_by('year(date)') %>% 
+  gather(pollutant, level, 3:8) 
+  
 
 
-This really noisy. I'd rather plot just the months.
+```
 
-For this I'll need to create a new date variable - year-month.
+Ok, finally. Time to plot. 
 
-```{r year-month}
+```{r}
 
-yr.mon <- year(airparif$date) * 100 + month(airparif$date)
-head(yr.mon)
+ggplot(data = count.levels.l, aes(x=level,
+                                  group = level, 
+                                  fill = pollutant)) +
+  geom_bar() + 
+  scale_x_discrete("Pollution Level") +
+  scale_y_continuous("Number of Days") +
+  facet_grid(~pollutant) 
+```
+
+Hmmmm...the problem is, the counts don't make sense, particularly as we haven't faceted by year.
+
+Time to look at a breakdown
+
+```{r}
+
 
 ```
 

@@ -34,6 +34,22 @@ tail(airparif,20)
 
 ## Prepare the data
 
+Where is the NA date?
+
+```{r}
+
+which(is.na(airparif$date))
+
+# look at vals before & after this row
+airparif[211:214,]
+
+# okay this happened on '29/07/2011' @ 20h
+airparif$date[213] <- '29/07/2011'
+airparif[211:214,]
+
+```
+
+
 Let's convert the date var into a true Date type variable
 
 ```{r convert str date into date}
@@ -208,7 +224,7 @@ ggpairs(sample, axisLabels = 'internal',
 ```{r}
   
 summary <- airparif %>% 
-  group_by(date) %>% 
+  group_by(year, date) %>% 
   summarise_each(funs(mean), PM10, PM25, NO2, O3, CO) %>% 
   ungroup() 
 
@@ -292,9 +308,11 @@ levels.long <- gather(levels, "pollutant", "level", 2:6)
 # reshaping to long format
 count.levels.l <- levels %>% 
   # collapse pollutant columns into one
+  # create year column
+  # mutate('year' = year(date)) %>% 
   # create new 'level' column
   gather(pollutant, level, 2:6) %>% 
-  group_by(year(date), pollutant, level) %>% 
+  group_by(pollutant, level) %>% 
   # count number of days at each level
   summarise(n = n())
 
@@ -313,7 +331,7 @@ count.levels.w <- count.levels.l %>%
 # and let's gather once more
 test <- count.levels.w %>% 
   ungroup() %>% 
-  group_by('year(date)') %>% 
+  group_by(year(date)) %>% 
   gather(pollutant, level, 3:8) 
   
 
@@ -330,7 +348,9 @@ ggplot(data = count.levels.l, aes(x=level,
   geom_bar() + 
   scale_x_discrete("Pollution Level") +
   scale_y_continuous("Number of Days") +
-  facet_grid(~pollutant) 
+  facet_wrap(~year) 
+#+
+ # facet_grid(~pollutant) 
 ```
 
 Hmmmm...the problem is, the counts don't make sense, particularly as we haven't faceted by year.

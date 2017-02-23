@@ -12,6 +12,7 @@ library(ggplot2)
 library(tidyverse)
 library(GGally)
 library(lubridate)
+library(reshape2) #plot missing vals
 
 theme_set(theme_bw())
 
@@ -31,6 +32,32 @@ head(airparif,20)
 tail(airparif,20)
 
 ```
+
+There seems to be a LOT of NA values
+
+```{r}
+# credit to:
+# http://www.njtierney.com/r/missing%20data/rbloggers/2015/12/01/ggplot-missing-data/
+ggplot_missing <- function(x){
+  
+  x %>% 
+    is.na %>%
+    melt %>%
+    ggplot(data = .,
+           aes(x = Var2,
+               y = Var1)) +
+    geom_raster(aes(fill = value)) +
+    scale_fill_grey(name = "",
+                    labels = c("Present","Missing")) +
+    theme_minimal() + 
+    theme(axis.text.x  = element_text(angle=45, vjust=0.5)) + 
+    labs(x = "Variables in Dataset",
+         y = "Rows / observations")
+}
+
+ggplot_missing(airparif[,1:7])
+```
+
 
 ## Prepare the data
 
@@ -270,13 +297,10 @@ So how many days have their been for each level?
 #x <- list(1:3, 4:6)
 #do.call(cbind, lapply(x, function(i) rowMeans(dat[, i])))
 
-x = summary[2:6]
+x = summary[2:7]
 x
 
 # create function to set pollution levels
-
-
-
 pollution.level <- function(x, lower = 0, upper = 100, 
                             by = 25, sep = "-", above.char = "+") {
  labs <- c("very low", "low", "medium", "high", "very high")
@@ -288,11 +312,7 @@ pollution.level <- function(x, lower = 0, upper = 100,
 }
 
 # apply to all the columns of x
-x[1:5] <- lapply(x[1:5], pollution.level)
-
-
-
-
+x[2:6] <- lapply(x[2:6], pollution.level)
 
 ```
 
@@ -301,18 +321,18 @@ x[1:5] <- lapply(x[1:5], pollution.level)
 levels <- cbind(summary[1], x)
 
 # gather(cases, "year", "n", 2:4)
-levels.long <- gather(levels, "pollutant", "level", 2:6)
+levels.long <- gather(levels, "pollutant", "level", 3:7)
 
 #spread(pollution, size, amount)
 
 # reshaping to long format
-count.levels.l <- levels %>% 
+count.levels.l <- levels.long %>% 
   # collapse pollutant columns into one
   # create year column
   # mutate('year' = year(date)) %>% 
   # create new 'level' column
-  gather(pollutant, level, 2:6) %>% 
-  group_by(pollutant, level) %>% 
+  #gather(pollutant, level, 2:7) %>% 
+  group_by(year,pollutant, level) %>% 
   # count number of days at each level
   summarise(n = n())
 
@@ -329,10 +349,10 @@ count.levels.w <- count.levels.l %>%
   spread(level, n, fill=0)
 
 # and let's gather once more
-test <- count.levels.w %>% 
-  ungroup() %>% 
-  group_by(year(date)) %>% 
-  gather(pollutant, level, 3:8) 
+test <- count.levels.w %>%
+  ungroup() %>%
+  group_by(year) %>%
+  gather(year, pollutant, level, 3:8)
   
 
 
@@ -342,15 +362,14 @@ Ok, finally. Time to plot.
 
 ```{r}
 
-ggplot(data = count.levels.l, aes(x=level,
-                                  group = level, 
+ggplot(data = filter(count.levels.l, year != 2011), aes(x=level, y=n,
+                                  group = pollutant, 
                                   fill = pollutant)) +
-  geom_bar() + 
-  scale_x_discrete("Pollution Level") +
+  geom_bar(stat="identity") + 
+  scale_x_discrete("Level") +
   scale_y_continuous("Number of Days") +
-  facet_wrap(~year) 
-#+
- # facet_grid(~pollutant) 
+  facet_wrap(~pollutant, ncol=2) +
+  #facet_wrap(~year)
 ```
 
 Hmmmm...the problem is, the counts don't make sense, particularly as we haven't faceted by year.

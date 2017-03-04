@@ -8,10 +8,11 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(ggplot2)
+#library(ggplot2)
+#library(lubridate)
 library(tidyverse)
 library(GGally)
-library(lubridate)
+
 library(reshape2) #plot missing vals
 
 theme_set(theme_bw())
@@ -22,7 +23,7 @@ theme_set(theme_bw())
 
 
 ```{r air pollution in paris Dec 2016}
-airparif <- read.csv("airparif_centre_8_12_2016.csv", sep = ";", stringsAsFactors = FALSE)
+airparif <- read.csv("airparif_centre_8_12_2016.csv", sep = ";", stringsAsFactors = TRUE)
 #airparif <- read.csv("airparif_centre_8_12_2016.csv", sep = ";")
 
 dim(airparif)
@@ -71,6 +72,7 @@ which(is.na(airparif$date))
 airparif[211:214,]
 
 # okay this happened on '29/07/2011' @ 20h
+# TODO: replace with locf (from dplyr?)
 airparif$date[213] <- '29/07/2011'
 airparif[211:214,]
 
@@ -130,21 +132,60 @@ What the abbreviations mean:
 
 Ok, so let's look at the data!
 
+```{r}
+
+ggplot(aes(heure, PM10, color = factor(year)), data = airparif) +
+  geom_jitter(alpha = 1/200)
+```
+
+
 ```{r plot histograms}
 
 qplot(data = airparif, PM10)
 
 ```
 
-Ugh. What's wrong here?
+
+
 
 ```{r}
 
-str(airparif)
+qplot(data = airparif, as.numeric(PM10), binwidth = 5)
 
 ```
 
-```{r convert columns to numeric}
+
+```{r boxplot}
+
+p <- qplot(data = airparif, x = as.factor(year), y = PM10, geom = "boxplot")
+p
+
+```
+
+```{r}
+
+#p <- qplot(PM10, data = airparif, geom = "freqpoly")
+p <- ggplot(aes(PM10), data = airparif)
+p + geom_freqpoly()
+
+```
+
+
+
+```{r}
+p + scale_y_continuous(limits = c(0,50))
+```
+
+
+Compare with using "coord_cartesian"
+
+```{r}
+
+p + coord_cartesian(ylim = c(0,50))
+
+```
+
+```{r convert columns to numeric, eval=FALSE, include=FALSE}
 
 # create list of cols to convert
 cols<- names(airparif)
@@ -251,7 +292,7 @@ ggpairs(sample, axisLabels = 'internal',
 ```{r}
   
 summary <- airparif %>% 
-  group_by(year, date) %>% 
+  group_by(date) %>% 
   summarise_each(funs(mean), PM10, PM25, NO2, O3, CO) %>% 
   ungroup() 
 

@@ -1,5 +1,5 @@
 ---
-title: "Exploratory Data Analysis with R's Ggplot2"
+title: "Exploratory Data Analysis with R Ggplot2"
 author: "Sarah Hosking"
 date: "October 19, 2017"
 output: 
@@ -25,15 +25,11 @@ theme_set(theme_bw())
 
 Example: Anscombe's quartet
 
-```{r anscombe}
+```{r anscombe, include=FALSE}
 
 anscombe
 
 ```
-
-# Stats vs Plots
-
-Same mean and standard deviation...
 
 ```{r calc anscombe stats, include=FALSE}
 
@@ -46,15 +42,13 @@ anscombe_stats <- rbind(mean, std_dev)
 
 ```
 
-```{r show stats}
+```{r show stats, echo=FALSE}
 
 anscombe_stats
 
 ```
 
-...but plots tell a better story
-
-```{r convert to long df}
+```{r convert to long df, include=FALSE}
 
 # create long df of anscombe data
 mydata=with(anscombe,data.frame(xVal=c(x1,x2,x3,x4), 
@@ -63,13 +57,13 @@ mydata=with(anscombe,data.frame(xVal=c(x1,x2,x3,x4),
 
 ```
 
+# Anscombe's quartet, visualized
 
-```{r plot mydata}
+```{r plot mydata, echo=FALSE}
 
 ggplot(data = mydata, aes(x = xVal, y = yVal, shape = mygroup)) +
-  geom_point(size = 3) +
+  geom_point(size = 3, colour = 'blue') +
   facet_wrap(~mygroup)
-
 
 ```
 
@@ -78,193 +72,116 @@ ggplot(data = mydata, aes(x = xVal, y = yVal, shape = mygroup)) +
 
 * open-source
 * mature ecosystem
-* made for stats
 * easy to share work
-* fantastic IDE, _RStudio_
+* fantastic IDE
 
 # Why Ggplot2?
 
-![](layer_cake.jpg)
+![](layer_cake.png)
 
-# Ggplot layers in action
+It's all about *layers*.
 
-```{r build up layers}
+# Explore Paris air quality
 
-# create plot data layer
-p <- ggplot(data = mydata, aes(x = xVal, y = yVal)) 
-p
+![](ParisPollution.png)
 
-# create geom layer
-g = geom_point(size = 3)
-p + g
-
-
-# update plot
-# map colour to group variable
-p <- p %+% aes(shape = mygroup)
-p + g
-
-# facet by group
-p + g + facet_wrap(~mygroup)
-
-```
-
-# Basic format
-
-```{r, eval=FALSE, include=TRUE}
-
-# formal
-ggplot(data = df, aes(x = x_var, y = y_var)) +  # data layer
-  geom_xxx()                                  # plot type
-
-# using shortcuts
-ggplot(df, aes(x_var, y_var)) +
-  geom_xxx() 
-
-# best practice
-p <- ggplot(df, aes(x_var, y_var))
-
-p + geom_xxx()
-```
-
-# Paris air quality data
-
-![](ParisPollution.jpg)
-
-```{r air pollution in paris Oct 2017}
+```{r air pollution in paris Oct 2017, include=FALSE}
 
 airparif <- read_rds("airparif_oct2017.rds")
+str(airparif)
+
+# Reorder columns
+airparif <- airparif[, c(1,8:10,2,4,3,5:7)]
+str(airparif)
+
+# make tidy
+airparif.tidy <- airparif %>% 
+  gather(PM10, PM25, NO2, O3, CO, 
+         key = 'pollutant', value = 'value', 
+         na.rm = TRUE) %>% 
+  group_by(date, heure, pollutant) %>% 
+  arrange(date)
+
+airparif.tidy <- data.frame(airparif.tidy)
+str(airparif.tidy)
+
 ```
 
-## What are we looking at?
 
-Airparif =  Paris air quality monitoring network
+# What are we looking at?
+
+![](logo_airparif.png)
 
 ```{r get names}
 
-# get column names
-names(airparif)
+tail(airparif.tidy)
 
 ```
 
-What the abbreviations mean:
-
-* `PM25` = fine particulate < 2.5 mm
-* `PM10` = fine particulate < 10 mm
+* `PM25` = Particulate matter < 2.5 µm
+* `PM10` = Particulate matter < 10 µm
 * `03` = Ozone
 * `NO2` = Nitrogen Dioxide (Azote)
 * `CO` = Carbon monoxide
 
-# Start exploring
+# Plot layer by layer
 
-```{r summary & structure}
-dim(airparif)
-str(airparif) # structure
-summary(airparif) # min, max, quartiles + count of NAs
-```
+What is the shape of the data?
 
-# Plot distributions
+```{r plot all pollutants}
 
-Particulate matter < 10mm
+# create plot
+hg <- ggplot(data = airparif.tidy, aes(x = value))
+hg 
 
-```{r distribution of PM10}
-
-hg <- ggplot(airparif, aes(PM10)) + 
-  geom_histogram()
-
+# add geom
+hg <- hg + geom_histogram()
 hg
 
-```
+# add facets
+hg + 
+  facet_wrap(~pollutant)
 
-# Plot another distribution
-
-Particulate matter < 2.5mm
-
-```{r verbose way}
-
-hg <- ggplot(airparif, aes(PM25)) +
-  geom_histogram()
-hg
-```
-
-
-# Seriously?
-
-![](tedious.gif)
-
-
-# Iterate faster
-
-## Tip 1: Update instead
-
-Update _data layer_ with `%+%`
-
-```{r substitute}
-
-hg %+% aes(PM25) + # replace x var with PM25
-  geom_histogram()
+# fix x-axis
+hg + facet_wrap(~pollutant, scales = 'free_x')
 
 ```
 
-## Tip 2: Use tidy data
+# Tip 1: Use tidy data
 
-Tidy means storing:
+Tidy means:
 
 * observations in rows
 * variables are columns
 * values in cells
 
-Not tidy
+*Not tidy*
 
-```{r not tidy}
+```{r not tidy, echo=FALSE}
 
 head(airparif)
-```
-
-
-```{r tidyr + dplyr, include=FALSE}
-
-airparif.tidy <- airparif %>% 
-  gather(PM10, PM25, NO2, O3, CO, 
-         key = 'pollutant', value = 'value', 
-         na.rm = TRUE) %>% 
-  group_by(date, heure, pollutant)
 
 ```
 
-Tidy
+*Tidy*
  
-```{r}
+```{r, echo=FALSE}
 
 head(airparif.tidy)
 
 ```
 
-# Tidy data = more grouping options
+#Tip 2: Update data with `%+%` operator
 
-Update plot with new df and x variable.
-
-```{r update plot with new df & x var}
-
-# update df & x var
-hg <- hg %+% airparif.tidy + aes(x = value)
-
-# plot
-hg + facet_wrap(~pollutant)
-
-# fix x-axis
-hg + facet_wrap(~pollutant, scales = 'free_x')
-```
-
-Add more visual elements
+Will colour make pollutants easier to differentiate?
 
 ```{r update aes}
 
 # update data layer with new mapping
 hg <- hg %+% aes(fill = pollutant)
 
-# show plot
-hg + facet_wrap(~pollutant)
+# plot
+hg + facet_wrap(~pollutant, scales = 'free_x')
 ```
 
 
@@ -279,9 +196,9 @@ hg + facet_grid(month~pollutant, scales = 'free_x')
 ```
 
 
-# Get a better look at outliers
+# Another view of distributions
 
-Use boxplots
+How do the values change over the year?
 
 ```{r boxplot}
 
@@ -292,17 +209,22 @@ bp <- ggplot(airparif.tidy, aes(month, value, fill = pollutant)) +
 # we'll use this a lot  
 fw <- facet_wrap(~pollutant, scales = 'free_y')
 
+# monthly boxplot
 bp + fw
+
+# hourly boxplot
+bp.h <- bp %+% aes(x = as.factor(heure)) 
+
+bp.h + fw
 
 ```
 
 # Add more data
 
-Add lines for the pollution thresholds
+How bad are these pollution spikes?
 
 ![](citeair-grille-calcul.png)
 
-## Create df of thresholds
 
 ```{r show hourly pollution levels, include=FALSE}
 
@@ -331,117 +253,24 @@ levels_h.long <- levels_h.df %>%
 # change col order
 levels_h.long <- levels_h.long[, c(2,3,1)]
 
-head(levels_h.long, 12)
 ```
 
-## Add second geom & new df
-
-Put things in perspective
 
 ```{r bp with pollution levels}
 
-# add horizontal line
-bp + fw +
-  geom_hline(data = levels_h.long, 
-                  aes(yintercept = value, group = pollutant), linetype = 2)
-
-# make this a var, for easy reuse
+# add horizontal line & levels df
 hl <- geom_hline(data = levels_h.long, 
                   aes(yintercept = value, group = pollutant), linetype = 2)
-```
 
-What if we looked at hours instead?
-
-```{r hourly dist}
-
-# replace `month` with `heure'
-bp <- bp %+% aes(x = as.factor(heure)) 
-
-# facet & show levels
-bp + fw + hl
-
-# zoom in
-bp + fw + cc
-
+bp.h + fw + hl
 
 ```
 
-# Grouping
-
-Show hourly changes throughout the day
-
-```{r filter on dec 2016}
-
-dec16 <- airparif.tidy %>% 
-  filter(year == 2016 & month == 12)
-
-```
-
-```{r line plot}
-
-p <- ggplot(dec16, aes(heure, value)) +
-              geom_line(colour = 'darkgrey')
-p + fw
-```
-
-# Change default grouping
-
-```{r}
-
-p <- p %+% aes(group = date)
-p + fw
-```
 
 
+# Create correlation grid
 
-# When was the extreme day?
-
-```{r filter data}
-
-# Dec 2016 particulate data
-dec16_pm <- dec16 %>% 
-  filter(pollutant %in% c('PM10', 'PM25'))
-
-# find index of max value in Dec
-max_val <- which(dec16_pm$value == max(dec16_pm$value))
-
-# find date
-max_date <- dec16_pm[max_val, 'date']
-
-# filter on this date
-dec16_pm_max <- dec16 %>%
-  filter(date == max_date$date)
-
-```
-
-```{r plot max PM10 day}
-
-# data layer
-p_max <- ggplot(dec16_pm_max, aes(heure, value, 
-                                  group = pollutant, 
-                                  colour = pollutant))
-#plot
-p_max + 
-  geom_line() +
-  fw
-  
-
-```
-
-# Combine data sets
-
-```{r}
-
-p +                               # line plot of all days in Dec 2016
-  geom_line(data = dec16_pm_max,  # line plot of spike day
-            aes(heure, value, colour = pollutant)) + 
-            hl +                  # pollution levels
-            fw
-
-
-```
-
-# Create grid of variables
+How correlated are the different pollutants?
 
 ```{r}
 
@@ -467,24 +296,23 @@ ggpairs(data=sample, # data.frame with variables
 ```{r add alpha and trendline}
 
 ggpairs(data = sample, 
-        lower = list(continuous = wrap("smooth", alpha=1/5, shape = I('.'))), #add trendline, reduce opacity
+        lower = list(continuous = wrap("smooth", alpha=1/5, shape = I('.'), 
+                                       colour ='blue')),
          title="Pollutant correlations")
 
 ```
 
-```{r ggpairs density}
+# Bonus: Heatmap
 
-ggpairs(data = sample, 
-        lower = list(continuous = wrap("density", alpha = 1/2)), # display continuous vars as density plots
-         title="Pollutant correlations")
+Which months have the lowest pollution?
 
-```
+```{r heatmap munging, include=FALSE}
 
-# Do we still have time?
+# summarize df
+ap.tidy.agg <- airparif.tidy %>% 
+  group_by(date, pollutant) %>% 
+  summarise(mean = mean(value))
 
-## Heatmap
-
-```{r heatmap munging, eval=FALSE, include=FALSE}
 
 # make wide df
 ap.agg <- ap.tidy.agg %>%
@@ -510,28 +338,13 @@ head(ap.scaled.tidy)
 
 ```
 
-```{r plot heatmap}
-
-# plot heatmap
-hm <- ggplot(data = ap.scaled.tidy, 
-             aes(x = pollutant, y = as.factor(month(date))))
-
-hm +
-  geom_tile(aes(fill = scale_value)) +
-  scale_fill_gradient2(low="blue", high="darkorange", guide="colorbar") +
-  labs(title = 'Standardized daily pollution values', 
-       subtitle = 'by pollutant and month')
-
-
-```
-
 ```{r data munge hourly data, include=FALSE}
 
 # data munging
 
 # scale by centering around mean
 # for that pollutant
-ap.h.scaled <- sapply(airparif[3:7], function(x) scale(x))
+ap.h.scaled <- sapply(airparif[6:10], function(x) scale(x))
 
 # convert to df
 ap.h.scaled <- as.data.frame(ap.h.scaled)
@@ -550,42 +363,152 @@ head(ap.h.scaled.tidy)
 
 ```
 
+```{r month heatmap}
+
+# data layer
+hm <- ggplot(data = ap.scaled.tidy, 
+             aes(x = pollutant, y = as.factor(month(date))))
+
+# add geom
+hm <- hm +
+  geom_tile(aes(fill = scale_value))
+  
+# add colour scale & plot
+hm + scale_fill_gradient2(low="blue", high="darkorange", guide="colorbar")
+
+
+```
+
+Which hours of the day are the least polluted?
+
 ```{r hourly heatmap}
-# plot
-hm %+% ap.h.scaled.tidy + aes(x=pollutant, y=hour) +
-  geom_tile(aes(fill = scale_value)) +
-  scale_fill_gradient2(low="blue", 
-                       high="darkorange", 
-                       guide="colorbar") +
-  labs(title = 'Standardized hourly pollution values')
+
+# update df and y var
+hm.h <- hm %+% ap.h.scaled.tidy + aes(y=hour)
+
+# add colour scale & plot
+hm.h + scale_fill_gradient2(low="blue", high="darkorange", guide="colorbar")
 
 ```
 
-## Zoom in
+# Bonus: Grouping
 
-Beware of reducing axis range with distributions.
+How did pollution fluctuate throughout the day?
 
-```{r coord_cartesian}
+```{r filter on dec 2016, include=FALSE}
 
-# no
-bp + fw + scale_y_continuous(limits = c(0,75))
+dec2016 <- airparif.tidy %>% 
+  filter(year == 2016 & month == 12)
 
-# yes
-bp + fw + coord_cartesian(ylim = c(0,75))
+dec2016 <- data.frame(dec2016)
+```
 
-# save as var for reuse
-cc <- coord_cartesian(ylim = c(0,75))
+```{r line plot}
+
+# create line plot
+p <- ggplot(dec2016, aes(heure, value)) +
+              geom_line(colour = 'darkgrey')
+p + fw
+
+# change default grouping
+p <- p %+% aes(group = date)
+p + fw
 
 ```
+
+## Highlight a single line
+
+When did particulate pollution spike?
+
+```{r filter data}
+
+# Dec 2016 particulate data
+dec2016_pm <- dec2016 %>% 
+  filter(pollutant %in% c('PM10', 'PM25'))
+
+# find index of max value in Dec
+max_val <- which.max(dec2016_pm[,'value'])
+
+# find date
+max_date <- dec2016_pm[max_val, 'date']
+
+# filter on this date
+dec2016_pm_max <- dec2016 %>%
+  filter(date == max_date)
+
+```
+
+Was it a big spike for the other pollutants?
+
+```{r plot max PM10 day}
+
+# pollution spike df
+p_spike <- geom_line(aes(heure, value, 
+                         group = pollutant, 
+                         colour = pollutant))
+
+# plot pollution spike day
+ggplot(data = dec2016_pm_max) + 
+  p_spike + 
+  fw
+
+# create layer for other days
+p_other <- geom_line(data = dec2016, 
+                      aes(heure, value, group = date), 
+                      colour = 'darkgrey')
+
+# combine & plot
+spag <- ggplot(data = dec2016_pm_max) + 
+  p_other + 
+  p_spike + 
+  fw
+
+spag
+
+# add threshold lines
+spag + hl
+
+```
+
+
+<!-- ## Zoom in -->
+
+<!-- Beware of reducing axis range with distributions. -->
+
+<!-- ```{r coord_cartesian} -->
+
+<!-- # no -->
+<!-- bp + fw + scale_y_continuous(limits = c(0,75)) -->
+
+<!-- # yes -->
+<!-- bp + fw + coord_cartesian(ylim = c(0,75)) -->
+
+<!-- ``` -->
+
+# Recap - to visualize groups:
+
+* tidy dataframes
+* map group vars to `aes()`
+* `facet_wrap` & `facet_grid`
+
+# Recap - to see correlations:
+
+* `ggpairs` correlation matrix
+* `geom_tile` heatmaps
+
+# Recap - to iterate quickly:
+
+* update data layer with `%+%`
+* save frequently-used layers as variables
 
 # Learn more
 
-data wrangling with R (dplyr & tidyr): https://s3.amazonaws.com/udacity-hosted-downloads/ud651/DataWranglingWithR.pdf
+Cookbook for R - Graphs: http://www.cookbook-r.com/Graphs/
 
-data.table package
+Ggplots cheatsheet: http://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf
 
-ggplot cheatsheet: http://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf
+Ggally tutorial: http://koaning.io/ggally-explore-all-the-things.html
 
-ggally tutorial: http://koaning.io/ggally-explore-all-the-things.html
+Data wrangling with Dplyr & Tidyr: https://s3.amazonaws.com/udacity-hosted-downloads/ud651/DataWranglingWithR.pdf
 
 

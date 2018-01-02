@@ -289,7 +289,8 @@ p
 ```{r}
 
 # add a trend line
-p + geom_smooth(method = "lm")
+lm <- geom_smooth(method = "lm")
+p + lm
 ```
 
 ```{r}
@@ -467,6 +468,33 @@ ggpairs(data=sample, # data.frame with variables
 
 ## Look at summaries
 
+```{r gather & spread}
+
+# create function to set pollution levels
+
+# first, define thresholds for diff pollutants
+#levels <- c()
+levels.PM10 <- c(0,15,30,50,100)
+levels.PM25 <- c(0,10,20,30,60)
+levels.NO2 <- c(0,50,100,200,400)
+levels.O3 <- c(0,60,120,180,240)
+
+
+
+upper = 0
+pollution.level <- function(x, levels, labs, upper = upper, 
+                            sep = "-", above.char = "+") {
+
+labs <- c("very low", "low", "medium", "high", "very high") 
+
+ cut(floor(x), 
+     breaks = c(levels, Inf),
+     right = FALSE, 
+     labels = labs)
+}
+
+```
+
 ```{r summary df}
 
 airparif.long <- airparif %>% 
@@ -475,10 +503,30 @@ airparif.long <- airparif %>%
          key = 'pollutant', value = 'value', 
          na.rm = TRUE) %>% 
   group_by(date, pollutant) %>% 
-  summarise(mean = mean(value),
-            median = median(value),
-            max = max(value))
+  summarise(mean = mean(value))
+ 
   
+```
+
+```{r}
+
+levels <-  airparif.long %>%
+  group_by(date, pollutant) %>% 
+  #mutate_all(funs('level' = pollution.level(.))) %>% 
+  mutate_all(funs(pollution.level))
+
+```
+
+```{r}
+airparif.levels <- airparif.long %>% 
+  ungroup() %>%
+  mutate(level =
+           ifelse(pollutant == 'PM10', pollution.level(mean, levels.PM10),
+               ifelse(polllutant == 'PM25', pollution.level(mean, levels.PM25), 'NA')))
+              #   ifelse(polllutant == 'NO2', pollution.level(mean, levels.NO2),
+              #          pollution.level(mean, levels.O3)))))
+
+
 ```
 
 ```{r save airparif.long}
@@ -506,14 +554,17 @@ For now, let's only examine fine particulate
 ```{r}
 
 # only plot PM pollutants
+labs <- c("very low", "low", "medium", "high", "very high") 
 particles <- airparif.long %>% 
-  filter(pollutant %in% c('PM10', 'PM25')) 
-
+  filter(pollutant %in% c('PM10', 'PM25')) %>% 
+  mutate(level = 
+           ifelse(pollutant == 'PM10', pollution.level(mean, levels.PM10), pollution.level(mean, levels.PM25))) %>% 
+  mutate(level = labs[level])
 
 p <- ggplot(particles, aes(date, mean))
 
 p + 
-  geom_line(aes(y = median, colour = pollutant)) + 
+  geom_line(aes(y = mean, colour = pollutant)) + 
   scale_x_date(date_breaks = '3 months', date_labels = "%b %d")
   
 ```
@@ -522,65 +573,81 @@ Need to add some more context to this plot. What are the levels for medium, high
 
 So how many days have their been for each level?
 
-```{r gather & spread}
 
-# create function to set pollution levels
-levels <- c()
-upper = 0
-pollution.level <- function(x, upper = upper, 
-                            sep = "-", above.char = "+") {
- labs <- c("very low", "low", "medium", "high", "very high")
-
- cut(floor(x), 
-     breaks = c(levels, Inf),
-     right = FALSE, 
-     labels = labs)
-}
-
-```
 
 
 ```{r}
 
 
-#levels <-  airparif.long %>%
-  #group_by(date, pollutant) %>% 
-  #mutate_all(funs('level' = pollution.level(.))) %>% 
+levels.test <-  airparif.long %>%
+  select(1:3) %>% 
+  ungroup() %>% 
+  mutate('level' = 
+           ifelse(grepl("PM10", pollutant), pollution.level(mean, levels.PM10),
+                  ifelse(grepl("PM25", pollutant), pollution.level(mean, levels.PM25), "NA")))
+#%>% 
   #mutate_all(funs(pollution.level))
 
-```
 
+```
 
 ```{r level NO2 only}
 
 levels <- c(0,50,100,200,400)
+levels.df <- as_data_frame(levels)
 
 NO2.levels <- airparif.long %>% 
   filter(pollutant == 'NO2') %>% 
   select(date:mean) %>% 
-  mutate('level' = pollution.level(mean))
+  mutate('level' = pollution.level(mean, levels))
 
-head(NO2.labelled)
 
-p <- ggplot(NO2.levels, aes(level)) +
-  geom_bar()
-p
 
 ```
 
+```{r plot NO2 means by year}
+
+levels.NO2 <- c(0,50,100,200,400)
+levels <- levels.NO2
+
+p <- ggplot(NO2.levels, aes(x = as.factor(month(date)), y = mean))
+p <- p + geom_boxplot()
+#p <- p + facet_wrap(~year(date), nrow = 1)
+p + geom_hline(yintercept = levels)
+
+```
+
+
+
+
+
 ```{r level PM10 only}
 
-levels <- c(0,15,30,50,100)
+levels.PM10 <- c(0,15,30,50,100)
+levels <- levels.PM10
 
 PM10.levels <- airparif.long %>% 
   filter(pollutant == 'PM10') %>% 
   select(date:mean) %>% 
-  mutate('level' = pollution.level(mean))
+  mutate('level' = pollution.level(mean, levels))
 
 
-p <- ggplot(PM10.levels, aes(level)) +
-  geom_bar()
-p
+p %+% PM10.levels + geom_hline(yintercept = levels)
+
+
+
+```
+
+```{r make hline a var}
+
+hl <- geom_hline(yintercept = levels,  linetype = 2)
+
+p + hl
+```
+```{r}
+levels <- levels.PM25
+p <- p %+% PM25.levels
+p + geom_hline(yintercept = levels)
 
 ```
 
@@ -588,15 +655,16 @@ p
 
 levels <- c(0,60,120,180,240)
 
-O3.levels <- airparif.long %>% 
+ozone.levels <- airparif.long %>% 
   filter(pollutant == 'O3') %>% 
   select(date:mean) %>% 
-  mutate('level' = pollution.level(mean))
+  mutate('level' = pollution.level(mean, levels))
 
 
-p <- ggplot(O3.levels, aes(level)) +
+p <- ggplot(ozone.levels, aes(level)) +
   geom_bar()
-p
+
+(p + facet_wrap(~month(date)))
 ```
 
 ```{r level PM25 only}
@@ -612,6 +680,104 @@ PM25.levels <- airparif.long %>%
 p <- ggplot(PM25.levels, aes(level)) +
   geom_bar()
 p
+```
+
+So there are different annaul patterns that differ by pollutant. 
+What about time of day?
+
+```{r}
+airparif.hlong <- airparif %>% 
+  #select(-year,-month, -day) %>% 
+  gather(PM10, PM25, NO2, O3, CO, 
+         key = 'pollutant', value = 'value', 
+         na.rm = TRUE) %>% 
+  group_by(date, month(date), heure, pollutant) %>% 
+  summarise(mean = mean(value))
+```
+
+what's the distributions by hour?
+
+```{r}
+
+levels <- c(0,50,100,200,400)
+h <- geom_hline(yintercept = levels, linetype = 2)
+
+
+NO2.hlevels <- airparif.hlong %>% 
+  filter(pollutant == 'NO2') %>% 
+  select(heure:mean) %>% 
+  mutate('level' = pollution.level(mean, levels))
+
+#p %+% NO2.levels + aes(x = as.factor(heure))
+
+p <- ggplot(NO2.hlevels, aes(x = as.factor(heure), y = mean))
+p <-p + geom_boxplot()
+p
+
+p <- p + facet_wrap(~month(date))
+p
+  
+```
+
+
+```{r}
+
+levels.O3 <- c(0,60,120,180,240)
+levels <- levels.O3
+
+O3.hlevels <- airparif.hlong %>% 
+  filter(pollutant == 'O3') %>% 
+  select(heure:mean) %>% 
+  mutate('level' = pollution.level(mean, levels))
+
+p %+% O3.hlevels
+```
+
+
+```{r}
+
+levels.PM10 <- c(0,15,30,50,100)
+levels <- levels.PM10
+
+PM10.hlevels <- airparif.hlong %>% 
+  filter(pollutant == 'PM10') %>% 
+  select(heure:mean) %>%
+  mutate('level' = pollution.level(mean, levels))
+
+p %+% PM10.hlevels
+```
+
+```{r PM25 hourly}
+
+levels.PM25 <- c(0,10,20,30,60)
+levels <- levels.PM25
+
+PM25.hlevels <- airparif.hlong %>% 
+  filter(pollutant == 'PM25') %>% 
+  select(heure:mean) %>% 
+  mutate('level' = pollution.level(mean, levels))
+
+plt <- p %+% PM25.hlevels
+plt
+```
+
+```{r plot levels}
+
+p <- ggplot(data = PM10.hlevels, aes(x = level, y = year(date))) +
+  geom_bar()
+p
+
+
+```
+
+
+##Merge tables
+
+```{r}
+
+all.levels <- left_join(all.levels, ozone.levels, by = 'date')
+all.levels <- left_join(all.levels, NO2.levels, by = 'date')
+head(all.levels)
 ```
 
 

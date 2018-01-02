@@ -123,6 +123,7 @@ str(airparif)
 
 #  Convert year month day to ordered factor
  airparif[,8:10] <- lapply(airparif[,8:10], factor, ordered = TRUE)
+ 
 # str(airparif)
 
 ```

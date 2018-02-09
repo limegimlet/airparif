@@ -10,8 +10,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(lubridate)
 library(tidyverse)
-library(GGally)
-
 library(reshape2) #plot missing vals
 
 theme_set(theme_bw())
@@ -20,22 +18,27 @@ theme_set(theme_bw())
 
 ## Read files
 
-
-```{r air pollution in paris Aug 2017}
+```{r air pollution in paris Oct 2017}
 
 airparif <- read.csv("airparif_centre_13_8_2017.csv", sep = ";", stringsAsFactors = FALSE)
+```
 
-#airparif <- read.csv("airparif_centre_8_12_2016.csv", sep = ";", stringsAsFactors = FALSE)
-
-#airparif <- read.csv("airparif_centre_8_12_2016.csv", sep = ";")
+```{r}
 
 dim(airparif)
+
+```
+
+
+```{r}
+
 str(airparif)
 summary(airparif)
 head(airparif,20)
 tail(airparif,20)
 
 ```
+
 
 ```{r convert col types}
 
@@ -47,13 +50,15 @@ str(airparif)
 ```{r}
 
 head(airparif)
+
 ```
 
-There seems to be a LOT of NA values
+There seems to be a LOT of NA values. 
 
 ```{r}
 # credit to:
 # http://www.njtierney.com/r/missing%20data/rbloggers/2015/12/01/ggplot-missing-data/
+
 missing.data <- function(x){
   
   x %>% 
@@ -115,15 +120,22 @@ str(airparif)
 
 ```{r add y m d}
 
-# make a copy
- airparif$date2 <- airparif$date
-# 
- airparif <- separate(airparif, date2, c("year", "month", "day"), sep="-")
-# str(airparif)
+# make a copy of data va
+airparif$date2 <- airparif$date
 
-#  Convert year month day to ordered factor
- airparif[,8:10] <- lapply(airparif[,8:10], factor, ordered = TRUE)
-# str(airparif)
+# separate in day month year
+airparif <- separate(airparif, date2, c("year", "month", "day"), sep="-")
+
+str(airparif)
+
+# Convert year month day to ordered factor
+airparif[,8:10] <- lapply(airparif[,8:10], factor, ordered = TRUE)
+ 
+str(airparif)
+
+# make column order more logical
+airparif <- airparif[, c(1,8:10,2,4,3,5:7)]
+str(airparif)
 
 ```
 

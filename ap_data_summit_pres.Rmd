@@ -2,12 +2,10 @@
 title: "Exploratory Data Analysis with R Ggplot2"
 author: "Sarah Hosking"
 date: "October 19, 2017"
-output: 
-  slidy_presentation:
-    font_adjustment: +2
-    fig_width: 7
-    fig_height: 5
-
+output:
+  github_document:
+     fig_height: 4
+     fig_width: 6
 ---
 
 ```{r setup, include=FALSE}
@@ -75,23 +73,19 @@ ggplot(data = mydata, aes(x = xVal, y = yVal, shape = mygroup)) +
 * easy to share work
 * fantastic IDE
 
-# Why Ggplot2?
+≠# Why Ggplot2?
 
-![](layer_cake.png)
+![](/Users/sarahhosking/Documents/!r/airparif/images/layer_cake.png)
 
 It's all about *layers*.
 
 # Explore Paris air quality
 
-![](ParisPollution.png)
+![](/Users/sarahhosking/Documents/!r/airparif/images/ParisPollution.png)
 
 ```{r air pollution in paris Oct 2017, include=FALSE}
 
 airparif <- read_rds("airparif_oct2017.rds")
-str(airparif)
-
-# Reorder columns
-airparif <- airparif[, c(1,8:10,2,4,3,5:7)]
 str(airparif)
 
 # make tidy
@@ -110,7 +104,7 @@ str(airparif.tidy)
 
 # What are we looking at?
 
-![](logo_airparif.png)
+![](/Users/sarahhosking/Documents/!r/airparif/images/logo_airparif.png)
 
 ```{r get names}
 
@@ -120,7 +114,7 @@ tail(airparif.tidy)
 
 * `PM25` = Particulate matter < 2.5 µm
 * `PM10` = Particulate matter < 10 µm
-* `03` = Ozone
+* `O3` = Ozone
 * `NO2` = Nitrogen Dioxide (Azote)
 * `CO` = Carbon monoxide
 
@@ -149,12 +143,6 @@ hg + facet_wrap(~pollutant, scales = 'free_x')
 
 # Tip 1: Use tidy data
 
-Tidy means:
-
-* observations in rows
-* variables are columns
-* values in cells
-
 *Not tidy*
 
 ```{r not tidy, echo=FALSE}
@@ -170,6 +158,11 @@ head(airparif)
 head(airparif.tidy)
 
 ```
+
+* observations in rows
+* variables are columns
+* values in cells
+
 
 #Tip 2: Update data with `%+%` operator
 
@@ -223,7 +216,7 @@ bp.h + fw
 
 How bad are these pollution spikes?
 
-![](citeair-grille-calcul.png)
+![](/Users/sarahhosking/Documents/!r/airparif/images/citeair-grille-calcul.png)
 
 
 ```{r show hourly pollution levels, include=FALSE}
@@ -262,6 +255,10 @@ levels_h.long <- levels_h.long[, c(2,3,1)]
 hl <- geom_hline(data = levels_h.long, 
                   aes(yintercept = value, group = pollutant), linetype = 2)
 
+# without hlines
+bp.h + fw
+
+# with hlines
 bp.h + fw + hl
 
 ```

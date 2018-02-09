@@ -3,9 +3,16 @@ title: "Exploratory Data Analysis with R Ggplot2"
 author: "Sarah Hosking"
 date: "October 19, 2017"
 output:
+<<<<<<< HEAD
   github_document:
      fig_height: 4
      fig_width: 6
+=======
+  slidy_presentation:
+    fig_height: 5
+    fig_width: 7
+    font_adjustment: 2
+>>>>>>> 24f10c0d61fc3ee1a29c972abec538ead59ccb62
 ---
 
 ```{r setup, include=FALSE}
@@ -75,13 +82,16 @@ ggplot(data = mydata, aes(x = xVal, y = yVal, shape = mygroup)) +
 
 ≠# Why Ggplot2?
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/layer_cake.png)
+<<<<<<< HEAD
+![](images/layer_cake.png)
 
 It's all about *layers*.
 
 # Explore Paris air quality
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/ParisPollution.png)
+![](images/ParisPollution.png)
+=======
+
 
 ```{r air pollution in paris Oct 2017, include=FALSE}
 
@@ -104,7 +114,8 @@ str(airparif.tidy)
 
 # What are we looking at?
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/logo_airparif.png)
+<<<<<<< HEAD
+![](images/logo_airparif.png)
 
 ```{r get names}
 
@@ -129,7 +140,7 @@ hg <- ggplot(data = airparif.tidy, aes(x = value))
 hg 
 
 # add geom
-hg <- hg + geom_histogram()
+hg <- hg + geom_histogram(stat = 'count')
 hg
 
 # add facets
@@ -216,7 +227,7 @@ bp.h + fw
 
 How bad are these pollution spikes?
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/citeair-grille-calcul.png)
+![](images/citeair-grille-calcul.png)
 
 
 ```{r show hourly pollution levels, include=FALSE}

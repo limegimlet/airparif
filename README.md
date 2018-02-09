@@ -1,5 +1,5 @@
 # airparif
-EDA of Paris pollution data
+EDA of Paris pollution data.
 Created for a ggplot2 tutorial at SAI conference on Oct 19 2017.
 
 * [View github-friendly presentation](ap_data_summit_pres.md)

@@ -3,16 +3,13 @@ title: "Exploratory Data Analysis with R Ggplot2"
 author: "Sarah Hosking"
 date: "October 19, 2017"
 output:
-<<<<<<< HEAD
   github_document:
      fig_height: 4
      fig_width: 6
-=======
-  slidy_presentation:
-    fig_height: 5
-    fig_width: 7
-    font_adjustment: 2
->>>>>>> 24f10c0d61fc3ee1a29c972abec538ead59ccb62
+  #slidy_presentation:
+    #fig_height: 5
+    #fig_width: 7
+    #font_adjustment: 2
 ---
 
 ```{r setup, include=FALSE}
@@ -80,9 +77,8 @@ ggplot(data = mydata, aes(x = xVal, y = yVal, shape = mygroup)) +
 * easy to share work
 * fantastic IDE
 
-≠# Why Ggplot2?
+# Why Ggplot2?
 
-<<<<<<< HEAD
 ![](images/layer_cake.png)
 
 It's all about *layers*.
@@ -114,7 +110,6 @@ str(airparif.tidy)
 
 # What are we looking at?
 
-<<<<<<< HEAD
 ![](images/logo_airparif.png)
 
 ```{r get names}
@@ -140,7 +135,7 @@ hg <- ggplot(data = airparif.tidy, aes(x = value))
 hg 
 
 # add geom
-hg <- hg + geom_histogram(stat = 'count')
+hg <- hg + geom_histogram()
 hg
 
 # add facets
@@ -352,7 +347,7 @@ head(ap.scaled.tidy)
 
 # scale by centering around mean
 # for that pollutant
-ap.h.scaled <- sapply(airparif[6:10], function(x) scale(x))
+ap.h.scaled <- sapply(airparif[3:7], function(x) scale(x))
 
 # convert to df
 ap.h.scaled <- as.data.frame(ap.h.scaled)

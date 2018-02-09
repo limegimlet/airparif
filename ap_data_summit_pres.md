@@ -25,33 +25,35 @@ Why R?
 -   easy to share work
 -   fantastic IDE
 
-≠\# Why Ggplot2?
+Why Ggplot2?
+============
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/layer_cake.png)
+![](images/layer_cake.png)
 
 It's all about *layers*.
 
 Explore Paris air quality
 =========================
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/ParisPollution.png)
+![](images/ParisPollution.png)
+==============================
 
 What are we looking at?
 =======================
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/logo_airparif.png)
+![](images/logo_airparif.png)
 
 ``` r
 tail(airparif.tidy)
 ```
 
-    ##              date year month day heure pollutant value
-    ## 245615 2017-08-13 2017    08  13    19        CO   300
-    ## 245616 2017-08-13 2017    08  13    20        CO   500
-    ## 245617 2017-08-13 2017    08  13    21        CO   300
-    ## 245618 2017-08-13 2017    08  13    22        CO   300
-    ## 245619 2017-08-13 2017    08  13    23        CO   300
-    ## 245620 2017-08-13 2017    08  13    24        CO   200
+    ##              date heure year month day pollutant value
+    ## 245615 2017-08-13    19 2017    08  13        CO   300
+    ## 245616 2017-08-13    20 2017    08  13        CO   500
+    ## 245617 2017-08-13    21 2017    08  13        CO   300
+    ## 245618 2017-08-13    22 2017    08  13        CO   300
+    ## 245619 2017-08-13    23 2017    08  13        CO   300
+    ## 245620 2017-08-13    24 2017    08  13        CO   200
 
 -   `PM25` = Particulate matter &lt; 2.5 µm
 -   `PM10` = Particulate matter &lt; 10 µm
@@ -100,23 +102,23 @@ Tip 1: Use tidy data
 
 *Not tidy*
 
-    ##         date year month day heure PM10 PM25 NO2 O3 CO
-    ## 2 2011-07-21 2011    07  21     1    7   NA  12 NA NA
-    ## 3 2011-07-21 2011    07  21     2    6   NA  10 NA NA
-    ## 4 2011-07-21 2011    07  21     3    7   NA  10 NA NA
-    ## 5 2011-07-21 2011    07  21     4    7   NA  14 NA NA
-    ## 6 2011-07-21 2011    07  21     5   10   NA  30 NA NA
-    ## 7 2011-07-21 2011    07  21     6   10   NA  36 NA NA
+    ##         date heure PM25 PM10 NO2 O3 CO year month day
+    ## 2 2011-07-21     1   NA    7  12 NA NA 2011    07  21
+    ## 3 2011-07-21     2   NA    6  10 NA NA 2011    07  21
+    ## 4 2011-07-21     3   NA    7  10 NA NA 2011    07  21
+    ## 5 2011-07-21     4   NA    7  14 NA NA 2011    07  21
+    ## 6 2011-07-21     5   NA   10  30 NA NA 2011    07  21
+    ## 7 2011-07-21     6   NA   10  36 NA NA 2011    07  21
 
 *Tidy*
 
-    ##         date year month day heure pollutant value
-    ## 1 2011-07-21 2011    07  21     1      PM10     7
-    ## 2 2011-07-21 2011    07  21     2      PM10     6
-    ## 3 2011-07-21 2011    07  21     3      PM10     7
-    ## 4 2011-07-21 2011    07  21     4      PM10     7
-    ## 5 2011-07-21 2011    07  21     5      PM10    10
-    ## 6 2011-07-21 2011    07  21     6      PM10    10
+    ##         date heure year month day pollutant value
+    ## 1 2011-07-21     1 2011    07  21      PM10     7
+    ## 2 2011-07-21     2 2011    07  21      PM10     6
+    ## 3 2011-07-21     3 2011    07  21      PM10     7
+    ## 4 2011-07-21     4 2011    07  21      PM10     7
+    ## 5 2011-07-21     5 2011    07  21      PM10    10
+    ## 6 2011-07-21     6 2011    07  21      PM10    10
 
 -   observations in rows
 -   variables are columns
@@ -181,7 +183,7 @@ Add more data
 
 How bad are these pollution spikes?
 
-![](/Users/sarahhosking/Documents/!r/airparif/images/citeair-grille-calcul.png)
+![](images/citeair-grille-calcul.png)
 
 ``` r
 # add horizontal line & levels df
